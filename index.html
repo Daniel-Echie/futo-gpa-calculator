@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FUTO GPA & CGPA Calculator</title>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:Inter, system-ui, Arial, sans-serif;
+    background:#f4f6f9; color:#111;
+    padding:12px;
+    line-height:1.5;
+  }
+  .app{width:100%; max-width:100%;}
+  
+  /* header */
+  header{
+    display:flex; flex-direction:column; gap:12px; 
+    padding:12px; border-radius:8px;
+    border-bottom:4px solid #006600; background:rgba(0,102,0,0.04);
+    margin-bottom:16px;
+  }
+  .header-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  header .left{display:flex;align-items:center;gap:12px}
+  header h1{margin:0;font-size:18px;color:#006600; flex:1}
+  .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap; justify-content:center}
+  button{
+    padding:8px 10px;border-radius:6px;border:none;cursor:pointer;
+    background:#006600;color:white;font-weight:600; font-size:13px;
+  }
+  .ghost{background:transparent;color:#006600;border:1px solid #006600}
+  .danger{background:#e74c3c}
+  
+  /* layout */
+  .grid{display:flex; flex-direction:column; gap:16px; margin-top:14px}
+  .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 4px 12px rgba(2,6,23,0.06)}
+  .semester{
+    border:1px solid rgba(0,0,0,0.08);padding:14px;border-radius:8px;
+    margin-bottom:14px; position:relative;
+  }
+  .semester-header {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
+  }
+  .semester .head{display:flex;justify-content:space-between;align-items:center; flex:1}
+  .courses{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .course-row{
+    display:flex; flex-direction: column; gap:8px; 
+    padding:10px; border:1px solid rgba(0,0,0,0.05); border-radius:8px;
+    background:rgba(0,0,0,0.02);
+  }
+  .course-inputs{display:flex; gap:8px; flex-wrap: wrap;}
+  .course-row input, .course-row select{
+    padding:10px;border-radius:6px;border:1px solid #ddd;font-size:15px;
+    background:#fff; color:#111;
+    flex: 1;
+    min-width: 120px;
+  }
+  .course-row input:focus, .course-row select:focus{
+    outline:none; border-color:#006600;
+  }
+  .course-name{flex: 2;}
+  .course-units{flex: 1;}
+  .course-grade{flex: 1;}
+  .course-actions{display:flex; justify-content: flex-end; gap:6px;}
+  .small{font-size:13px;color:#666}
+  .result{margin-top:10px;font-weight:700;display:flex;gap:12px;flex-wrap:wrap; font-size:14px}
+  .remark{margin-top:6px;font-style:italic;color:#666; font-size:13px}
+  .progress{height:14px;background:rgba(0,0,0,0.06);border-radius:8px;overflow:hidden;position:relative;margin-top:8px}
+  .progress > i{display:block;height:100%;width:0%;background:#006600}
+  .right-summary .big{font-size:20px;font-weight:800;color:#006600}
+  footer{margin-top:18px;color:#666;text-align:center;padding-top:8px;border-top:2px solid #006600;font-weight:600; font-size:13px}
+  
+  /* Checkbox styling */
+  .select-checkbox {
+    appearance:none; -webkit-appearance:none;
+    width:22px; height:22px;
+    border:2px solid #006600; background:#fff;
+    border-radius:5px; cursor:pointer; display:flex; 
+    align-items:center; justify-content:center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .select-checkbox:checked{ 
+    background:#006600; 
+    border-color: #006600;
+  }
+  .select-checkbox:checked::after{ 
+    content:"✓"; 
+    font-size:14px; 
+    color:#fff; 
+    font-weight:bold;
+  }
+  
+  /* Mobile optimizations */
+  .mobile-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  
+  .mobile-controls button {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  
+  .semester-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .semester-actions button {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  
+  /* Desktop adjustments */
+  @media (min-width: 768px) {
+    body { padding: 16px; }
+    header { flex-direction: row; align-items: center; }
+    .header-top { width: 100%; }
+    .controls { justify-content: flex-end; }
+    .course-row { flex-direction: row; }
+    .course-inputs { flex: 1; }
+    .course-actions { flex: 0; }
+    .grid { flex-direction: row; }
+    .grid > div:first-child { flex: 2; }
+    .grid > aside { flex: 1; max-width: 320px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-top">
+        <div class="left">
+          <img id="logo" src="images/futo_logo.png" alt="FUTO Logo" style="height:36px" 
+               onerror="this.onerror=null; this.style.display='none'; document.getElementById('logoFallback').style.display='flex';">
+          <div id="logoFallback" style="display:none; align-items:center; font-weight:bold; color:#006600; font-size:18px; height:36px; padding:0 8px; border:2px solid #006600; border-radius:4px;">
+            FUTO
+          </div>
+          <h1>FUTO GPA & CGPA Calculator</h1>
+        </div>
+      </div>
+      
+      <div class="mobile-controls">
+        <button id="addSemesterBtn">+ Semester</button>
+        <button id="quickAddBtn" class="ghost">+ Course</button>
+        <button id="saveBtn" class="ghost">Save</button>
+        <button id="resetAllBtn" class="danger">Reset</button>
+      </div>
+      
+      <div class="controls">
+        <button id="selectAllBtn" class="ghost">Select All</button>
+        <button id="deselectAllBtn" class="ghost">Deselect All</button>
+        <button id="printSelectedBtn" class="ghost">Print Selected</button>
+        <button id="printAllBtn" class="ghost">Print All</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div>
+        <div id="semestersContainer" class="card"></div>
+      </div>
+
+      <aside>
+        <div class="card right-summary">
+          <div>
+            <div class="small">Cumulative CGPA</div>
+            <div class="big" id="cgpaDisplay">0.00</div>
+            <div class="small">Total Units: <span id="cgpaUnits">0</span></div>
+            <div class="small">Total Points: <span id="cgpaPoints">0</span></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small">Best Semester</div>
+            <div id="bestSemester" class="small">—</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small">Worst Semester</div>
+            <div id="worstSemester" class="small">—</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small">Overall Progress</div>
+            <div class="progress"><i id="overallBar"></i></div>
+            <div style="margin-top:8px" class="small">Remark: <span id="cgRemark">—</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Made for FUTO students • By Echie Daniel Ogochukwu</footer>
+  </div>
+
+<script>
+// FUTO GPA CALCULATOR - FAST TYPING VERSION
+const STORAGE_KEY = "futo_gpa_fast_v1";
+const MAX_GRADE = 5;
+const gradeValues = { A:5, B:4, C:3, D:2, E:1, F:0 };
+
+// DOM Elements
+const semestersContainer = document.getElementById("semestersContainer");
+const cgpaDisplay = document.getElementById("cgpaDisplay");
+const cgpaUnits = document.getElementById("cgpaUnits");
+const cgpaPoints = document.getElementById("cgpaPoints");
+const cgRemark = document.getElementById("cgRemark");
+const bestSemesterEl = document.getElementById("bestSemester");
+const worstSemesterEl = document.getElementById("worstSemester");
+const overallBar = document.getElementById("overallBar");
+
+let data = { semesters: [] };
+
+// Helpers
+function uid(prefix="id"){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
+
+function saveData(){ 
+    try{ 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); 
+    }catch(e){ 
+        console.warn("save failed",e);
+    } 
+}
+
+function loadData(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ 
+        try{ 
+            data = JSON.parse(raw); 
+        } catch(e){ 
+            data = {semesters:[]};
+        } 
+    }
+    if(!data.semesters || !data.semesters.length){
+        data.semesters = [ createSemester(0), createSemester(1) ];
+        saveData();
+    }
+}
+
+function createSemester(index){
+    const year = Math.floor(index/2) + 1;
+    const season = index % 2 === 0 ? "Harmattan" : "Rain";
+    return { 
+        id: uid("sem"), 
+        name: `Year ${year} – ${season}`, 
+        courses: [], 
+        _meta: {gpa:0, units:0, points:0} 
+    };
+}
+
+function remarkText(gpa){
+    if(gpa >= 4.50) return "First Class 🎓";
+    if(gpa >= 3.50) return "Second Class Upper";
+    if(gpa >= 2.50) return "Second Class Lower";
+    if(gpa >= 1.50) return "Third Class";
+    if(gpa >= 1.00) return "Pass";
+    return "Fail";
+}
+
+// SIMPLE RENDER FUNCTION - NO RE-RENDERING ON TYPING
+function render(){
+    semestersContainer.innerHTML = "";
+    data.semesters.forEach((sem, idx) => {
+        computeSemester(sem);
+        const s = document.createElement("div");
+        s.className = "semester";
+        s.dataset.idx = idx;
+        s.innerHTML = `
+            <div class="semester-header">
+                <input type="checkbox" class="select-checkbox" data-select="${idx}" title="Select this semester">
+                <div class="head">
+                    <div contenteditable="true" class="sem-name" data-name="${idx}">${sem.name}</div>
+                    <div class="semester-actions">
+                        <button class="ghost" data-add="${idx}" title="Add course">+</button>
+                        <button class="ghost" data-duplicate="${idx}" title="Duplicate semester">Copy</button>
+                        <button class="ghost" data-remove="${idx}" title="Remove semester">×</button>
+                    </div>
+                </div>
+            </div>
+            <div class="courses" id="courses-${idx}"></div>
+            <div class="result small">
+                GPA: <span data-gpa="${idx}">${sem._meta.gpa.toFixed(2)}</span> |
+                Units: <span data-units="${idx}">${sem._meta.units}</span> |
+                Points: <span data-points="${idx}">${sem._meta.points}</span>
+            </div>
+            <div class="remark">Remark: <span data-remark="${idx}">${remarkText(sem._meta.gpa)}</span></div>
+        `;
+        semestersContainer.appendChild(s);
+
+        // Bind semester buttons
+        s.querySelector(`[data-add="${idx}"]`).addEventListener("click", ()=>{ addCourse(idx); });
+        s.querySelector(`[data-duplicate="${idx}"]`).addEventListener("click", ()=>{ duplicateSemester(idx); });
+        s.querySelector(`[data-remove="${idx}"]`).addEventListener("click", ()=>{ 
+            if(confirm("Remove this semester and all its courses?")){ 
+                data.semesters.splice(idx,1); 
+                saveData(); 
+                render(); 
+            }
+        });
+        
+        s.querySelector(`[data-name="${idx}"]`).addEventListener("input", (e)=>{ 
+            data.semesters[idx].name = e.target.innerText; 
+            saveData(); 
+        });
+
+        // Render courses - NO RE-RENDERING ON INPUT
+        const coursesDiv = s.querySelector(`#courses-${idx}`);
+        sem.courses.forEach((c, cIdx) => {
+            const row = document.createElement("div");
+            row.className = `course-row`;
+            
+            row.innerHTML = `
+                <div class="course-inputs">
+                    <input type="text" class="course-name" placeholder="Course name" 
+                           value="${c.name}" data-name="${idx}-${cIdx}">
+                    <select class="course-units" data-units="${idx}-${cIdx}" title="Select units">
+                        <option value="1" ${c.units == 1 ? 'selected' : ''}>1 Unit</option>
+                        <option value="2" ${c.units == 2 ? 'selected' : ''}>2 Units</option>
+                        <option value="3" ${c.units == 3 ? 'selected' : ''}>3 Units</option>
+                        <option value="4" ${c.units == 4 ? 'selected' : ''}>4 Units</option>
+                        <option value="5" ${c.units == 5 ? 'selected' : ''}>5 Units</option>
+                        <option value="6" ${c.units == 6 ? 'selected' : ''}>6 Units</option>
+                    </select>
+                    <select class="course-grade" data-grade="${idx}-${cIdx}" title="Select grade">
+                        <option value="A" ${c.grade === 'A' ? 'selected' : ''}>A</option>
+                        <option value="B" ${c.grade === 'B' ? 'selected' : ''}>B</option>
+                        <option value="C" ${c.grade === 'C' ? 'selected' : ''}>C</option>
+                        <option value="D" ${c.grade === 'D' ? 'selected' : ''}>D</option>
+                        <option value="E" ${c.grade === 'E' ? 'selected' : ''}>E</option>
+                        <option value="F" ${c.grade === 'F' ? 'selected' : ''}>F</option>
+                    </select>
+                </div>
+                <div class="course-actions">
+                    <button class="ghost" data-del="${idx}-${cIdx}" title="Remove course">Remove</button>
+                </div>
+            `;
+
+            // SIMPLE INPUT HANDLERS - NO RE-RENDERING
+            const nameInput = row.querySelector(`[data-name="${idx}-${cIdx}"]`);
+            const unitsSelect = row.querySelector(`[data-units="${idx}-${cIdx}"]`);
+            const gradeSelect = row.querySelector(`[data-grade="${idx}-${cIdx}"]`);
+
+            // Course name input - JUST SAVE DATA, NO RE-RENDER
+            nameInput.addEventListener('input', function(e) {
+                c.name = e.target.value;
+                saveData();
+                // Update only the GPA display for this semester
+                computeSemester(data.semesters[idx]);
+                updateSemesterDisplay(idx);
+            });
+
+            // Units selection - JUST SAVE DATA, NO RE-RENDER
+            unitsSelect.addEventListener('change', function(e) {
+                c.units = parseInt(e.target.value);
+                saveData();
+                computeSemester(data.semesters[idx]);
+                updateSemesterDisplay(idx);
+            });
+
+            // Grade selection - JUST SAVE DATA, NO RE-RENDER
+            gradeSelect.addEventListener('change', function(e) {
+                c.grade = e.target.value;
+                saveData();
+                computeSemester(data.semesters[idx]);
+                updateSemesterDisplay(idx);
+            });
+
+            // Remove course button - ONLY THIS NEEDS RE-RENDER
+            row.querySelector(`[data-del="${idx}-${cIdx}"]`).addEventListener("click", ()=>{ 
+                data.semesters[idx].courses.splice(cIdx,1); 
+                saveData(); 
+                render(); // Only re-render when removing courses
+            });
+
+            coursesDiv.appendChild(row);
+        });
+
+        // Empty state
+        if(!sem.courses.length){
+            const hint = document.createElement("div");
+            hint.style.marginTop = "8px";
+            hint.innerHTML = `<span class="small">No courses yet. </span><button class="ghost" data-add2="${idx}">Add first course</button>`;
+            hint.querySelector(`[data-add2="${idx}"]`).addEventListener("click", ()=>{ addCourse(idx); });
+            coursesDiv.appendChild(hint);
+        }
+    });
+
+    computeCGPA();
+}
+
+// Update only the GPA display for a semester (no re-rendering)
+function updateSemesterDisplay(semIdx) {
+    const sem = data.semesters[semIdx];
+    computeSemester(sem);
+    
+    // Update the displayed values without re-rendering
+    const gpaSpan = document.querySelector(`[data-gpa="${semIdx}"]`);
+    const unitsSpan = document.querySelector(`[data-units="${semIdx}"]`);
+    const pointsSpan = document.querySelector(`[data-points="${semIdx}"]`);
+    const remarkSpan = document.querySelector(`[data-remark="${semIdx}"]`);
+    
+    if (gpaSpan) gpaSpan.textContent = sem._meta.gpa.toFixed(2);
+    if (unitsSpan) unitsSpan.textContent = sem._meta.units;
+    if (pointsSpan) pointsSpan.textContent = sem._meta.points;
+    if (remarkSpan) remarkSpan.textContent = remarkText(sem._meta.gpa);
+    
+    // Update overall CGPA
+    computeCGPA();
+}
+
+// Operations
+function addSemester(name){
+    const idx = data.semesters.length;
+    data.semesters.push(createSemester(idx));
+    if(name) data.semesters[data.semesters.length-1].name = name;
+    saveData(); 
+    render();
+}
+
+function duplicateSemester(idx){
+    const original = data.semesters[idx];
+    const duplicate = {
+        ...JSON.parse(JSON.stringify(original)),
+        id: uid("sem"),
+        name: original.name + " (Copy)"
+    };
+    data.semesters.splice(idx + 1, 0, duplicate);
+    saveData();
+    render();
+}
+
+function addCourse(semIdx, courseData = null){
+    const sem = data.semesters[semIdx];
+    const newCourse = courseData || { name: "", units: 3, grade: "A" };
+    sem.courses.push(newCourse);
+    saveData(); 
+    render();
+}
+
+function computeSemester(sem){
+    let totalU = 0, totalP = 0;
+    sem.courses.forEach(c => {
+        const units = Math.max(1, Math.min(6, Number(c.units) || 0));
+        const gv = gradeValues[c.grade] || 0;
+        totalU += units;
+        totalP += units * gv;
+    });
+    sem._meta.units = totalU;
+    sem._meta.points = totalP;
+    sem._meta.gpa = totalU ? +(totalP / totalU).toFixed(2) : 0;
+    return sem._meta;
+}
+
+function computeCGPA(){
+    let tu = 0, tp = 0;
+    data.semesters.forEach(s => {
+        if(!s._meta) computeSemester(s);
+        tu += s._meta.units || 0;
+        tp += s._meta.points || 0;
+    });
+    
+    const cgpa = tu ? +(tp/tu).toFixed(2) : 0;
+    
+    // Update UI
+    cgpaDisplay.innerText = cgpa.toFixed(2);
+    cgpaUnits.innerText = tu;
+    cgpaPoints.innerText = tp;
+    cgRemark.innerText = remarkText(cgpa);
+    
+    // Progress bar
+    const pct = Math.round((cgpa / MAX_GRADE) * 100);
+    overallBar.style.width = pct + "%";
+    
+    // Best and worst semesters
+    const sorted = data.semesters.slice().sort((a,b) => (b._meta?.gpa||0) - (a._meta?.gpa||0));
+    const best = sorted[0];
+    const worst = sorted[sorted.length - 1];
+    
+    bestSemesterEl.innerText = best ? `${best.name} — ${(best._meta?.gpa||0).toFixed(2)}` : "—";
+    worstSemesterEl.innerText = worst ? `${worst.name} — ${(worst._meta?.gpa||0).toFixed(2)}` : "—";
+    
+    saveData();
+    return { cgpa, tu, tp };
+}
+
+// Quick Add Feature
+function quickAddCourse(){
+    const semWithSpace = data.semesters.find(sem => sem.courses.length < 8);
+    const targetSem = semWithSpace || data.semesters[data.semesters.length - 1];
+    
+    if(!targetSem){
+        addSemester();
+        addCourse(0);
+    } else {
+        const semIdx = data.semesters.indexOf(targetSem);
+        addCourse(semIdx);
+    }
+}
+
+// Print/Transcript
+function getSelectedSemesters(){
+    const checks = Array.from(document.querySelectorAll(".select-checkbox"));
+    const idxs = checks.map(cb => cb.checked ? parseInt(cb.getAttribute("data-select")) : null).filter(v => v !== null);
+    return idxs.sort((a,b)=>a-b).map(i => data.semesters[i]);
+}
+
+function buildTranscriptHtml(sems){
+    let totalU=0, totalP=0;
+    sems.forEach(s => { computeSemester(s); totalU += s._meta.units; totalP += s._meta.points; });
+    const cgpa = totalU ? +(totalP/totalU).toFixed(2) : 0;
+
+    let html = `
+        <div style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:20px; font-weight:bold; margin-bottom:5px;">FEDERAL UNIVERSITY OF TECHNOLOGY, OWERRI</div>
+            <div style="font-size:16px; margin-bottom:10px;">ACADEMIC TRANSCRIPT</div>
+            <div style="font-size:12px; color:#666;">Generated on ${new Date().toLocaleDateString()}</div>
+        </div>
+    `;
+
+    sems.forEach(s => {
+        html += `<h3 style="margin:15px 0 8px; border-bottom:1px solid #000; padding-bottom:3px;">${s.name}</h3>`;
+        html += `<table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:12px;">`;
+        html += `<thead><tr>
+            <th style="border:1px solid #000;padding:6px; background:#f0f0f0;">Course</th>
+            <th style="border:1px solid #000;padding:6px; background:#f0f0f0;">Units</th>
+            <th style="border:1px solid #000;padding:6px; background:#f0f0f0;">Grade</th>
+            <th style="border:1px solid #000;padding:6px; background:#f0f0f0;">Points</th>
+        </tr></thead><tbody>`;
+        
+        s.courses.forEach(c => {
+            const gp = (Number(c.units) || 0) * (gradeValues[c.grade] || 0);
+            html += `<tr>
+                <td style="border:1px solid #000;padding:6px">${c.name}</td>
+                <td style="border:1px solid #000;padding:6px;text-align:center">${c.units||0}</td>
+                <td style="border:1px solid #000;padding:6px;text-align:center">${c.grade||''}</td>
+                <td style="border:1px solid #000;padding:6px;text-align:center">${gp}</td>
+            </tr>`;
+        });
+        
+        html += `<tr style="font-weight:bold;">
+            <td style="border:1px solid #000;padding:6px">TOTALS</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center">${s._meta.units||0}</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center">GPA</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center">${(s._meta.gpa||0).toFixed(2)}</td>
+        </tr>`;
+        html += `</tbody></table>`;
+        html += `<div style="margin-bottom:15px;font-style:italic; font-weight:bold; font-size:12px;">Remark: ${remarkText(s._meta.gpa||0)}</div>`;
+    });
+
+    html += `<hr style="margin:20px 0; border-top:2px double #000;">`;
+    html += `<div style="font-size:16px;font-weight:bold; margin-bottom:8px;">CUMULATIVE SUMMARY</div>`;
+    html += `<div style="font-size:14px; margin:3px 0;">Total Units: ${totalU}</div>`;
+    html += `<div style="font-size:14px; margin:3px 0;">Total Points: ${totalP}</div>`;
+    html += `<div style="font-size:18px;font-weight:bold; margin:8px 0;">Cumulative CGPA: ${cgpa.toFixed(2)}</div>`;
+    html += `<div style="font-size:14px;font-weight:bold; margin:8px 0;">Classification: ${remarkText(cgpa)}</div>`;
+
+    return html;
+}
+
+function openPrintWindow(html){
+    const w = window.open("", "_blank", "width=900,height=700");
+    const style = `<style>
+        body{font-family:Arial, sans-serif;padding:20px;color:#000; line-height:1.4; font-size:14px}
+        table{font-size:12px; width:100%}
+        @media print { body{padding:0; margin:10px} }
+    </style>`;
+    w.document.write(`<html><head><title>FUTO Transcript</title>${style}</head><body>${html}</body></html>`);
+    w.document.close();
+    setTimeout(()=>{ w.print(); }, 500);
+}
+
+// Event Bindings
+document.getElementById("addSemesterBtn").addEventListener("click", ()=>{ addSemester(); });
+document.getElementById("resetAllBtn").addEventListener("click", ()=>{ 
+    if(confirm("Clear ALL data? This cannot be undone.")){ 
+        data = { semesters: [ createSemester(0) ] }; 
+        saveData(); 
+        render(); 
+    } 
+});
+document.getElementById("saveBtn").addEventListener("click", saveData);
+document.getElementById("quickAddBtn").addEventListener("click", quickAddCourse);
+document.getElementById("printAllBtn").addEventListener("click", ()=> { 
+    const html = buildTranscriptHtml(data.semesters); 
+    openPrintWindow(html); 
+});
+document.getElementById("printSelectedBtn").addEventListener("click", ()=> {
+    const selected = getSelectedSemesters();
+    if(!selected.length){ 
+        alert('Select semesters to print (use checkboxes)'); 
+        return; 
+    }
+    const html = buildTranscriptHtml(selected);
+    openPrintWindow(html);
+});
+document.getElementById("selectAllBtn").addEventListener("click", ()=> {
+    document.querySelectorAll(".select-checkbox").forEach(cb => cb.checked = true);
+});
+document.getElementById("deselectAllBtn").addEventListener("click", ()=> {
+    document.querySelectorAll(".select-checkbox").forEach(cb => cb.checked = false);
+});
+
+// Initialize
+loadData();
+data.semesters.forEach(s => { 
+    if(!s.courses) s.courses = []; 
+    if(!s._meta) s._meta = {gpa:0,units:0,points:0}; 
+});
+render();
+
+// Auto-save when leaving page
+window.addEventListener('beforeunload', () => saveData());
+</script>
+</body>
+</html>
